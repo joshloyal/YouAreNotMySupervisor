@@ -4,7 +4,9 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import sklearn.manifold as manifold
+from sklearn.decomposition import PCA
 
+from pandas.tools.plotting import parallel_coordinates
 from bokeh_plots import scatter_with_hover
 from bokeh_server import bokeh_server
 
@@ -17,13 +19,15 @@ color_palette = sns.color_palette('deep', 8)
 
 algorithm_class_dict = {
     'mds': manifold.MDS,
-    'tsne': manifold.TSNE
+    'tsne': manifold.TSNE,
+    'pca': PCA,
 }
 
 
 algorithm_kwargs_dict = {
     'mds': dict(n_components=2, max_iter=100, n_init=1, random_state=0),
     'tsne': dict(n_components=2, init='pca', random_state=0),
+    'pca': dict(n_components=2)
 }
 
 
@@ -105,5 +109,25 @@ def bokeh_plot_2d(data, labels=None, probabilities=None, algorithm='tsne', algor
         df = pd.DataFrame(data_dict)
 
     with bokeh_server(name='comp') as server:
-        q = scatter_with_hover(df, 'proj1', 'proj2', cols=original_columns, color=cluster_member_colors, alpha=0.5, size=10)
+        q = scatter_with_hover(df, 'proj1', 'proj2', cols=original_columns, color=cluster_member_colors, alpha=0.5, size=5)
         server.show(q)
+
+
+def plot_parallel_coordinates(data, labels, n_components=10, algorithm='tsne', algorithm_kwargs=None):
+    if data.shape[1] > n_components:
+        algorithm_class = algorithm_class_dict[algorithm]
+        if algorithm_kwargs:
+            algorithm_kwargs['n_components'] = n_components
+            algorithm = algorithm_class(**algorithm_kwargs)
+        else:
+            kwargs_dict = algorithm_kwargs_dict.copy()
+            kwargs_dict[algorithm]['n_components'] = n_components
+            algorithm = algorithm_class(**kwargs_dict[algorithm])
+        Y = algorithm.fit_transform(data)
+    else:
+        Y = data
+
+    df = pd.DataFrame(Y)
+    df['y'] = labels
+    parallel_coordinates(df[ df['y'] != -1 ], 'y')
+    plt.show()
