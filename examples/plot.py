@@ -113,21 +113,26 @@ def bokeh_plot_2d(data, labels=None, probabilities=None, algorithm='tsne', algor
         server.show(q)
 
 
-def plot_parallel_coordinates(data, labels, n_components=10, algorithm='tsne', algorithm_kwargs=None):
-    if data.shape[1] > n_components:
-        algorithm_class = algorithm_class_dict[algorithm]
-        if algorithm_kwargs:
-            algorithm_kwargs['n_components'] = n_components
-            algorithm = algorithm_class(**algorithm_kwargs)
-        else:
-            kwargs_dict = algorithm_kwargs_dict.copy()
-            kwargs_dict[algorithm]['n_components'] = n_components
-            algorithm = algorithm_class(**kwargs_dict[algorithm])
-        Y = algorithm.fit_transform(data)
-    else:
-        Y = data
+def plot_parallel_coordinates(data, labels, n_components=10, algorithm='tsne', algorithm_kwargs=None, show_average=False):
+    #if data.shape[1] > n_components:
+    #    algorithm_class = algorithm_class_dict[algorithm]
+    #    if algorithm_kwargs:
+    #        algorithm_kwargs['n_components'] = n_components
+    #        algorithm = algorithm_class(**algorithm_kwargs)
+    #    else:
+    #        kwargs_dict = algorithm_kwargs_dict.copy()
+    #        kwargs_dict[algorithm]['n_components'] = n_components
+    #        algorithm = algorithm_class(**kwargs_dict[algorithm])
+    #    Y = algorithm.fit_transform(data)
+    #else:
+    #    Y = data
 
-    df = pd.DataFrame(Y)
+    df = data
     df['y'] = labels
+
+    if show_average:
+        df = df.groupby('y').mean()
+        df['y'] = df.index
+
     parallel_coordinates(df[ df['y'] != -1 ], 'y')
     plt.show()

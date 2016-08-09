@@ -3,14 +3,15 @@ from sklearn.manifold import TSNE, MDS
 from sklearn.cluster import MiniBatchKMeans, KMeans
 
 from mysuper.datasets import fetch_10kdiabetes
-from plot import bokeh_plot_2d
+from plot import bokeh_plot_2d, plot_parallel_coordinates
 
-data = fetch_10kdiabetes()[:1000]
-original = fetch_10kdiabetes(original_dataframe=True)[:1000]
-
-#hdb = HDBSCAN(min_cluster_size=10, metric='cosine').fit(data)
-#bokeh_plot_2d(data, labels=hdb.labels_, probabilities=hdb.probabilities_, algorithm='tsne', untransformed_data=original)
-
-
-kmeans = MiniBatchKMeans(n_clusters=5, max_iter=10, random_state=1234).fit(data)
-bokeh_plot_2d(data, labels=kmeans.labels_, algorithm='tsne',  untransformed_data=original)
+data = fetch_10kdiabetes(only_numerics=True)[:1000]
+#original = fetch_10kdiabetes(original_dataframe=True)[:1000]
+#
+#cluster = HDBSCAN(min_cluster_size=5, metric='l2').fit(data)
+#bokeh_plot_2d(data.values, labels=cluster.labels_, probabilities=cluster.probabilities_, algorithm='tsne')
+#
+#
+cluster = MiniBatchKMeans(n_clusters=5, n_init=20, max_iter=100, random_state=1234).fit(data.values)
+bokeh_plot_2d(data.values, labels=cluster.labels_, algorithm='tsne')
+plot_parallel_coordinates(data, labels=cluster.labels_, show_average=True)

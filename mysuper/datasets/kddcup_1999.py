@@ -5,8 +5,9 @@ from mysuper.datasets import utils as data_utils
 
 
 root = os.path.abspath(os.path.dirname(__file__))
-FEATURE_NAME = os.path.join(root, 'kddcup.names')
-KDD_NAME = os.path.join(root, 'kddcup.data_10_percent')
+DATA_NAME = 'data'
+FEATURE_NAME = os.path.join(root, DATA_NAME, 'kddcup.names')
+KDD_NAME = os.path.join(root, DATA_NAME, 'kddcup.data_10_percent')
 
 
 def feature_names():
