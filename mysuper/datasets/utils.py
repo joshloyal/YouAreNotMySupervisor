@@ -37,8 +37,16 @@ def is_numeric(dtype):
     return np.issubdtype(dtype, np.number)
 
 
+def is_categorical(dtype):
+    return not is_numeric(dtype)
+
+
 def numeric_columns(dataframe):
     return unflatten_list(dtype_dict(dataframe, is_numeric).values())
+
+
+def categorical_columns(dataframe):
+    return unflatten_list(dtype_dict(dataframe, is_categorical).values())
 
 
 def mean_impute_numerics(dataframe):
@@ -56,12 +64,7 @@ def mean_impute_numerics(dataframe):
 
 
 def replace_null(dataframe, value='NaN', inplace=False):
-    if not inplace:
-        dataframe = dataframe.copy()
-
-    for column in dtype_dict(dataframe)['object']:
-        dataframe[pd.isnull(dataframe[column])] = value
-
+    dataframe[pd.isnull(dataframe)] = value
     return dataframe
 
 

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import sklearn.manifold as manifold
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, TruncatedSVD, RandomizedPCA
 
 from pandas.tools.plotting import parallel_coordinates
 from bokeh_plots import scatter_with_hover
@@ -66,6 +66,9 @@ def plot_2d(data, labels=None, probabilities=None, algorithm='tsne', algorithm_k
 
 def bokeh_plot_2d(data, labels=None, probabilities=None, algorithm='tsne', algorithm_kwargs=None, untransformed_data=None):
     if data.shape[1] > 2:
+        if data.shape[1] > 32 and algorithm != 'pca':
+            data = RandomizedPCA(n_components=32).fit_transform(data)
+
         algorithm_class = algorithm_class_dict[algorithm]
         if algorithm_kwargs:
             algorithm = algorithm_class(**algorithm_kwargs)
@@ -113,20 +116,23 @@ def bokeh_plot_2d(data, labels=None, probabilities=None, algorithm='tsne', algor
         server.show(q)
 
 
-def plot_parallel_coordinates(data, labels, n_components=10, algorithm='tsne', algorithm_kwargs=None, show_average=False):
-    #if data.shape[1] > n_components:
-    #    algorithm_class = algorithm_class_dict[algorithm]
-    #    if algorithm_kwargs:
-    #        algorithm_kwargs['n_components'] = n_components
-    #        algorithm = algorithm_class(**algorithm_kwargs)
-    #    else:
-    #        kwargs_dict = algorithm_kwargs_dict.copy()
-    #        kwargs_dict[algorithm]['n_components'] = n_components
-    #        algorithm = algorithm_class(**kwargs_dict[algorithm])
-    #    Y = algorithm.fit_transform(data)
-    #else:
-    #    Y = data
 
+def project_data(data, algorithm='tsne', algorithm_kwargs=None, n_components=2):
+    if data.shape[1] > n_components:
+        algorithm_class = algorithm_class_dict[algorithm]
+        if algorithm_kwargs:
+            algorithm_kwargs['n_components'] = n_components
+            algorithm = algorithm_class(**algorithm_kwargs)
+        else:
+            kwargs_dict = algorithm_kwargs_dict.copy()
+            kwargs_dict[algorithm]['n_components'] = n_components
+            algorithm = algorithm_class(**kwargs_dict[algorithm])
+        return algorithm.fit_transform(data)
+    else:
+        return data
+
+
+def plot_parallel_coordinates(data, labels, n_components=10, algorithm='tsne', algorithm_kwargs=None, show_average=False):
     df = data
     df['y'] = labels
 
@@ -136,3 +142,13 @@ def plot_parallel_coordinates(data, labels, n_components=10, algorithm='tsne', a
 
     parallel_coordinates(df[ df['y'] != -1 ], 'y')
     plt.show()
+
+
+def prep_for_d3(data, cluster, filename):
+    Y = project_data(data.values, algorithm='tsne')
+    data['name'] = cluster.labels_
+    data['name'] = data['name'].apply(lambda x: 'group_{}'.format(x))
+    data['group'] = cluster.labels_
+    data['y1'] = Y[:, 0]
+    data['y2'] = Y[:, 1]
+    data.to_csv(filename, index_label='index')

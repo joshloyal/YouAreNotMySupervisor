@@ -15,11 +15,9 @@ DATA_NAME = 'data'
 FILE_NAME = os.path.join(root, DATA_NAME, '10k_diabetes.csv')
 
 
-def fetch_10kdiabetes(original_dataframe=False, only_numerics=False):
+def fetch_10kdiabetes(only_numerics=False, only_categoricals=False, one_hot=False):
     # load data
     df = pd.read_csv(FILE_NAME)
-    if original_dataframe:
-        return df
 
     # don't use the target for clustering for now
     y = df.pop('readmitted').values.astype(np.int)
@@ -31,27 +29,22 @@ def fetch_10kdiabetes(original_dataframe=False, only_numerics=False):
     numeric_cols = data_utils.numeric_columns(df)
     if numeric_cols:
         num_x = data_utils.mean_impute_numerics(df[numeric_cols])
+        numerics = pd.DataFrame(num_x, columns=df[numeric_cols].columns)
 
-
-    dtype_groups = data_utils.dtype_dict(df)
 
     # replace NaN
-    data_utils.replace_null(df, inplace=True)
+    categorical_cols = data_utils.categorical_columns(df)
+    categorical_df = data_utils.replace_null(df[categorical_cols], value='NaN')
 
-    cat_X, num_X = None, None
-    if 'object' in  dtype_groups:
-        cat_X = data_utils.dict_encode(df[dtype_groups['object']], sparse=False)
-
+    if one_hot:
+        categoricals = pd.get_dummies(categorical_df, drop_first=True)
+    else:
+        categoricals = data_utils.label_encode(categorical_df)
 
 
     if only_numerics:
-        return pd.DataFrame(num_x, columns=df[numeric_cols].columns)
-
-    if cat_X is not None and num_X is not None:
-        X = np.c_[cat_X, num_X]
-    elif cat_X is not None:
-        X = cat_X
+        return numerics
+    elif only_categoricals:
+        return categorical
     else:
-        X = num_X
-
-    return X
+        return pd.concat([numerics, categoricals], axis=1)
